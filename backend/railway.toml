@@ -1,6 +1,6 @@
 [build]
 builder = "NIXPACKS"
-buildCommand = "npm ci --ignore-optional"
+buildCommand = "npm install --ignore-optional"
 
 [deploy]
 startCommand = "node server.js"
