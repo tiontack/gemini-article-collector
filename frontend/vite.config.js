@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  base: '/gemini-article-collector/',
   server: {
     port: 5175,
     proxy: {
