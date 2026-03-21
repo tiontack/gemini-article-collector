@@ -193,6 +193,16 @@ app.delete('/api/links/:id', (req, res) => {
 const IS_MACOS = process.platform === 'darwin';
 const CHROME_EXEC = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 
+function getChromiumExec() {
+  if (IS_MACOS) return CHROME_EXEC;
+  if (process.env.PUPPETEER_EXECUTABLE_PATH) return process.env.PUPPETEER_EXECUTABLE_PATH;
+  const { execFileSync } = require('child_process');
+  for (const name of ['chromium', 'chromium-browser', 'google-chrome']) {
+    try { return execFileSync('which', [name]).toString().trim(); } catch (_) {}
+  }
+  return 'chromium';
+}
+
 function fixChromeCookies(cookies) {
   return cookies.map(c => {
     const fixed = {
@@ -230,10 +240,6 @@ async function getChromeGoogleCookies() {
 }
 
 async function scrapeGeminiShare(url) {
-  if (!IS_MACOS) {
-    throw new Error('스크래핑은 로컬 macOS 환경에서만 동작합니다. (Chrome 세션 필요)');
-  }
-
   // Normalize short URLs
   const targetUrl = url.replace('g.co/gemini/share/', 'gemini.google.com/share/');
 
@@ -243,23 +249,34 @@ async function scrapeGeminiShare(url) {
 
   let browser;
   try {
-    browser = await puppeteer.launch({
-      executablePath: CHROME_EXEC,
-      userDataDir: tmpDir,
+    const launchOptions = {
+      executablePath: getChromiumExec(),
       headless: 'new',
-      args: ['--no-sandbox', '--disable-dev-shm-usage'],
-    });
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--single-process',
+      ],
+    };
+    // macOS: use tmpDir + inject Chrome cookies for private Gemini links
+    if (IS_MACOS) launchOptions.userDataDir = tmpDir;
+
+    browser = await puppeteer.launch(launchOptions);
 
     const page = await browser.newPage();
 
-    // Inject Chrome's Google cookies for authentication
-    try {
-      const cookies = await getChromeGoogleCookies();
-      for (const c of cookies) {
-        try { await page.setCookie(c); } catch (_) {}
+    // Inject Chrome's Google cookies for authentication (macOS only)
+    if (IS_MACOS) {
+      try {
+        const cookies = await getChromeGoogleCookies();
+        for (const c of cookies) {
+          try { await page.setCookie(c); } catch (_) {}
+        }
+      } catch (e) {
+        console.warn('Cookie injection failed:', e.message);
       }
-    } catch (e) {
-      console.warn('Cookie injection failed:', e.message);
     }
 
     await page.setUserAgent(

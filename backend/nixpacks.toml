@@ -1,2 +1,2 @@
 [phases.setup]
-nixPkgs = ["nodejs_20", "python3"]
+nixPkgs = ["nodejs_20", "python3", "chromium", "nss", "freetype", "harfbuzz", "ca-certificates", "cups", "libdrm", "mesa", "expat"]
