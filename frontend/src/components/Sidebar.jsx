@@ -2,7 +2,7 @@ import { useState } from 'react';
 import axios from 'axios';
 import './Sidebar.css';
 
-const API = '/api';
+const API = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api';
 
 export default function Sidebar({
   links, stats, filterSource, setFilterSource,

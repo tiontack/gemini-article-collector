@@ -53,7 +53,7 @@ export default function App() {
   useEffect(() => { loadAll(); }, [loadAll]);
 
   useEffect(() => {
-    fetch('/api/config').then(r => r.json()).then(d => setHasApiKey(!!d.hasApiKey)).catch(() => {});
+    fetch(`${API}/config`).then(r => r.json()).then(d => setHasApiKey(!!d.hasApiKey)).catch(() => {});
   }, []);
 
   const handleFetchAll = async () => {
